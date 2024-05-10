@@ -11,6 +11,7 @@ from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 import creds
 import re
+from datetime import datetime
 waiting_for_tea=""
 def get_pos_for_open(pos, what):
     if what=="none":
@@ -307,7 +308,6 @@ async def process_addTasks_command(message:Message, state: FSMContext):
         elif bol == "CR":
             await bot.send_message(message.chat.id, "Напишите 1. Если для команды и 2. Если это для борда")
         elif bol == "LD":
-            await bot.send_message(message.chat.id, "Напишите 1. Если для команды и 2. Если это для борда")
             await message.answer(
                 "Напишите 1 Если для IT команды\n"
                 "Напишите 2 Если для HR команды\n"
@@ -343,7 +343,7 @@ async def task_get(message: Message, state:FSMContext):
     file.write(task)
     file.write('.')
     file.close()
-    await bot.send_message(message.chat.id, "Напишите дедлайн таска в формате: дата.месяц.год время")
+    await bot.send_message(message.chat.id, "Напишите дедлайн таска в формате: дата-месяц-год время")
     await state.update_data(waiting_for_task=task)
     await state.set_state(addTaskStates.waiting_for_date)
 
@@ -365,9 +365,60 @@ async def person_get(message: Message, state:FSMContext):
     file.write(person)
     file.write('\n')
     file.close()
+    idfrom = str(message.chat.id)
+    file = open("users.txt", "r")
+    bol = "none"
+    for line in file:
+        if person in line:
+            bol = line
+            break
+    file.close()
     await bot.send_message(message.chat.id, "Таск добавлен")
     await state.update_data(waiting_for_person=person)
     await state.clear()
+    await notice(bol,waiting_for_tea,idfrom)
+
+async def notice(id,fil,idfrom):
+    file = open(fil, "r")
+    dat = "none"
+    task = ""
+    name = id[id.find(" ")+1:id.rfind(" ")]
+    for line in file:
+        if name in line:
+            dat = line[line.find(".")+1:line.rfind(".")]
+            task = line[:line.find(".")]
+    counter = 0
+    send = 0
+    results = [dat[:dat.find("-")], dat[dat.find("-")+1:dat.rfind("-")], dat[dat.rfind("-")+1:dat.rfind(" ")], dat[dat.rfind(" "):dat.rfind(":")], dat[dat.rfind(":")+1:]]
+    deadlinetime = list(map(int, results))
+    while (counter != 3):
+        current_datetime = datetime.now()
+        if counter == 1 and send == 0:
+            await bot.send_message(id[:id.find(" ")], "Дедлайны горят, дедлайн наступит через 3 дня. По таску: " + task)
+            await bot.send_message(idfrom, "Дедлайн по задаче " + task + " закончится через 3 дня, ответсвенный за неё " + name)
+            send = 1
+        elif counter == 2 and send == 1:
+            await bot.send_message(id[:id.find(" ")], "Дедлайн уже завтра!!! По таску: " + task)
+            await bot.send_message(idfrom, "Дедлайн по задаче " + task + " закончится через завтра, ответсвенный за неё " + name)
+        if (int(current_datetime.year) - deadlinetime[2] == 0):
+            if (int(current_datetime.month) - deadlinetime[1] == 0):
+                if (int(current_datetime.day) - deadlinetime[0] == 3):
+                    if (int(current_datetime.hour) - deadlinetime[3] == 0):
+                        if (int(current_datetime.minute) - deadlinetime[4] == 0):
+                            counter = 1
+                elif (int(current_datetime.day) - deadlinetime[0] == 1):
+                    if (int(current_datetime.hour) - deadlinetime[3] == 0):
+                        if (int(current_datetime.minute) - deadlinetime[4] == 0):
+                            counter = 2
+                            send = 1
+                elif (int(current_datetime.day) - deadlinetime[0] == 0):
+                    if (int(current_datetime.hour) - deadlinetime[3] == 0):
+                        if (int(current_datetime.minute) - deadlinetime[4] == 0):
+                            counter = 3
+
+    await bot.send_message(id[:id.find(" ")], "Время на выполнение задачи " + task + " истекло")
+    await bot.send_message(idfrom, "Дедлайн по задаче " + task + " закончился, ответсвенный за неё " + name + ". Если она выполнена, то удалите пожалуйста данную задачу из списка тасков и поставте такому хорошему человеку + KPI=)")
+
 @dp.message(Command(commands=['Tasks']))
 async def process_Tasks_command(message:Message):
     id = str(message.chat.id)
