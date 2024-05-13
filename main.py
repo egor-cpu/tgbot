@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -25,6 +27,27 @@ def get_pos_for_open(pos, what):
             return "CR"
         elif "LD" in pos:
             return "LD"
+        else:
+            return "0"
+    elif what=="1":
+        if "ITL" in pos:
+            return "IT"
+        elif "HRL" in pos:
+            return "HR"
+        elif "PRL" in pos:
+            return "PR"
+        elif "CRL" in pos:
+            return "CR"
+        elif "LD" in pos:
+            return "LD"
+        elif "IT" in pos:
+            return "it"
+        elif "PR" in pos:
+            return "pr"
+        elif "CR" in pos:
+            return "cr"
+        elif "HR" in pos:
+            return "hr"
         else:
             return "0"
     else:
@@ -83,16 +106,6 @@ dp = Dispatcher()
 async def process_start_command(message: Message):
     await message.answer('Привет!\nМеня зовут Ботик котик!\nНапиши /help , чтобы узнать, что тебе доступно')
 
-@dp.message(Command(commands=["gayvodka"]))
-async def process_gayvodka_command(message: Message):
-    gayvodka=FSInputFile("photo_5891009063846789742_w.jpg")
-    await message.answer_photo(gayvodka)
-
-@dp.message(Command(commands=["gayvodka2"]))
-async def process_gayvodka2_command(message: Message):
-    gayvodka2=FSInputFile("photo_5195295404948840202_y.jpg")
-    await message.answer_photo(gayvodka2)
-# Этот хэндлер будет срабатывать на команду "/help"
 @dp.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     id = str(message.chat.id)
@@ -376,7 +389,7 @@ async def person_get(message: Message, state:FSMContext):
     await bot.send_message(message.chat.id, "Таск добавлен")
     await state.update_data(waiting_for_person=person)
     await state.clear()
-    await notice(bol,waiting_for_tea,idfrom)
+    await asyncio.create_task(notice(bol,waiting_for_tea,idfrom))
 
 async def notice(id,fil,idfrom):
     file = open(fil, "r")
@@ -418,7 +431,7 @@ async def notice(id,fil,idfrom):
 
     await bot.send_message(id[:id.find(" ")], "Время на выполнение задачи " + task + " истекло")
     await bot.send_message(idfrom, "Дедлайн по задаче " + task + " закончился, ответсвенный за неё " + name + ". Если она выполнена, то удалите пожалуйста данную задачу из списка тасков и поставте такому хорошему человеку + KPI=)")
-
+    pass
 @dp.message(Command(commands=['Tasks']))
 async def process_Tasks_command(message:Message):
     id = str(message.chat.id)
@@ -533,6 +546,84 @@ async def process_KPI_command(message: Message):
     else:
         await bot.send_message(message.chat.id, "Для начала пройдите регистрацию")
 
+@dp.message(Command(commands=['mytasks']))
+async def process_mytasks_command(message: Message):
+    id = str(message.chat.id)
+    file = open("users.txt", "r")
+    bol = "none"
+    name = "none"
+    for line in file:
+        if id in line:
+            bol = line
+            name = line[line.find(" ")+1:line.rfind(" ")]
+            break
+    file.close()
+    if "IT" in bol:
+        file = open("ITtasks.txt", "r")
+        await bot.send_message(message.chat.id, "IT Команды таски, за которые вы ответсвенны:")
+        for line in file:
+            if name in line:
+                await message.answer(line)
+        file.close()
+        if "ITL" in bol:
+            file = open("Boardtasks.txt", "r")
+            await bot.send_message(message.chat.id, "Board таски, за которые вы ответсвенны:")
+            for line in file:
+                if name in line:
+                    await message.answer(line)
+            file.close()
+    elif "HR" in bol:
+        file = open("HRtasks.txt", "r")
+        await bot.send_message(message.chat.id, "HR Команды таски, за которые вы ответсвенны:")
+        for line in file:
+            if name in line:
+                await message.answer(line)
+        file.close()
+        if "HRL" in bol:
+            file = open("Boardtasks.txt", "r")
+            await bot.send_message(message.chat.id, "Board таски, за которые вы ответсвенны:")
+            for line in file:
+                if name in line:
+                    await message.answer(line)
+            file.close()
+    elif "PR" in bol:
+        await bot.send_message(message.chat.id, "PR Команды таски, за которые вы ответсвенны:")
+        file = open("PRtasks.txt", "r")
+        for line in file:
+            if name in line:
+                await message.answer(line)
+        file.close()
+        if "PRL" in bol:
+            file = open("Boardtasks.txt", "r")
+            await bot.send_message(message.chat.id, "Board таски, за которые вы ответсвенны:")
+            for line in file:
+                if name in line:
+                    await message.answer(line)
+            file.close()
+    elif "CR" in bol:
+        await bot.send_message(message.chat.id, "CR Команды таски, за которые вы ответсвенны:")
+        file = open("CRtasks.txt", "r")
+        for line in file:
+            if name in line:
+                await message.answer(line)
+        file.close()
+        if "CRL" in bol:
+            file = open("Boardtasks.txt", "r")
+            await bot.send_message(message.chat.id, "Board таски, за которые вы ответсвенны:")
+            for line in file:
+                if name in line:
+                    await message.answer(line)
+            file.close()
+    elif "LD" in bol:
+        file = open("Boardtasks.txt", "r")
+        await bot.send_message(message.chat.id, "Board таски, за которые вы ответсвенны:")
+        for line in file:
+            if name in line:
+                await message.answer(line)
+        file.close()
+    else:
+        await bot.send_message(message.chat.id, "Вы долны зарегистрироваться для просмотра своих тасков через /reg")
+
 
 dp.message.register(process_start_command, Command(commands='start'))
 dp.message.register(process_help_command, Command(commands='help'))
@@ -543,6 +634,14 @@ dp.message.register(process_Tasks_command, Command(commands='Tasks'))
 dp.message.register(process_addTasks_command, Command(commands='addTasks'))
 dp.message.register(process_remove_command,Command(commands='removeTasks'))
 if __name__ == '__main__':
-    dp.run_polling(bot)
+    loop = asyncio.get_event_loop()
+    try:
+        loop.create_task(dp.start_polling(bot))
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.stop()
+        loop.close()
 
 
